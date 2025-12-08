@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>(((digital delay)))</title>
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      font-family: "Courier New", monospace;
+      background: #000;
+      color: #fff;
+      width: 300px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 2px solid #fff;
+    }
+
+    .pedal {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border: 1px dashed #fff;
+      padding: 8px;
+      width: 258px;
+    }
+
+    .pedal-title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #fff;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+
+    .knobs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 6px;
+    }
+
+    .knob {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px dashed #555;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    .knob label {
+      font-size: 12px;
+      margin-bottom: 2px;
+      display: block;
+      color: #aaa;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 90%;
+      max-width: 200px;
+      height: 6px;
+      background: #111;
+      border: 1px solid #555;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 16px;
+      background: #fff;
+      border: 1px solid #000;
+      cursor: pointer;
+    }
+
+    select {
+      width: 120px;
+      background: #000;
+      color: #fff;
+      border: 1px dashed #555;
+      font-family: "Courier New", monospace;
+      padding: 3px;
+    }
+
+    .tempo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    input[type="checkbox"] {
+      accent-color: #fff;
+      transform: scale(1.1);
+      margin-right: 4px;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      background: #000;
+      color: #fff;
+      border: 1px solid #555;
+      font-family: "Courier New", monospace;
+      padding: 2px;
+      text-align: right;
+    }
+
+    #timeValue {
+      display: block;
+      font-size: 11px;
+      color: #ccc;
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    .footer {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 10px;
+      color: #666;
+      border-top: 1px dashed #333;
+      padding-top: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="pedal">
+    <h2 class="pedal-title">┌─(((digital delay)))─┐</h2>
+
+    <div class="knobs">
+
+      <div class="knob">
+        <label for="dry">[ DRY GAIN ]</label>
+        <input type="range" id="dry" min="0" max="100" value="100">
+      </div>
+
+      <div class="knob">
+        <label for="level">[ DELAY GAIN ]</label>
+        <input type="range" id="level" min="0" max="100" value="50">
+      </div>
+
+      <div class="knob">
+        <label for="feedback">[ FEEDBACK ]</label>
+        <input type="range" id="feedback" min="0" max="99" value="40">
+      </div>
+
+      <div class="knob">
+        <label for="time" id="timeLabel">[ DELAY TIME ]</label>
+        <input type="range" id="time" min="0" max="7" value="2">
+        <span id="timeValue">---</span>
+      </div>
+
+      <div class="knob">
+        <div class="tempo-row">
+          <label>
+            <input type="checkbox" id="tempoMode" checked>
+            [ TEMPO-LOCK ]
+          </label>
+          <input type="number" id="bpm" min="20" max="300" value="120">
+        </div>
+      </div>
+
+      <div class="knob">
+        <label for="pitch">[ GLOBAL PITCH ]</label>
+        <input type="range" id="pitch" min="-24" max="24" value="0">
+      </div>
+
+      <div class="knob">
+        <label for="reverb">[ REVERB GAIN ]</label>
+        <input type="range" id="reverb" min="0" max="100" value="30">
+      </div>
+
+      <!-- NO LABEL for this one -->
+      <div class="knob">
+        <select id="reverbSelect">
+          <option value="hall">hall</option>
+          <option value="hall2">hall2</option>
+          <option value="dark">dark</option>
+          <option value="cavern">cavern</option>
+          <option value="spring">spring</option>
+          <option value="spring2">spring2</option>
+          <option value="bathroom">bathroom</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      └─ tab delay module from f.lower() ─┘<br>//digital/records\_
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
