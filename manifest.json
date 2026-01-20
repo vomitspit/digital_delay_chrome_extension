@@ -1,11 +1,22 @@
 {
   "manifest_version": 3,
   "name": "(((digital delay)))",
-  "description": "adds configurable delay/echo to your tab audio",
-  "version": "0.4",
+  "description": "adds configurable delay/echo and other effects to media elements within your tab",
+  "version": "1.0",
   "permissions": ["tabCapture", "offscreen", "activeTab", "storage", "tabs"],
+  "icons": {
+    "16": "icons/(((dd)))16.png",
+    "32": "icons/(((dd)))32.png",
+    "48": "icons/(((dd)))48.png",
+    "128": "icons/(((dd)))128.png"
+  },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_title": "(((digital delay)))",
+    "default_icon": {
+      "16": "icons/(((dd)))16.png",
+      "32": "icons/(((dd)))32.png"
+    }
   },
   "content_scripts": [
     {

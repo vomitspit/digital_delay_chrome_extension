@@ -11,7 +11,7 @@ let reverbGainNode;
 let loadedImpulse = null;
 let impulseLoading = false;
 
-let currentParams = {
+let defaultParams = {
   dry: 1.0,
   level: 0.5,
   feedback: 0.6,
@@ -20,16 +20,16 @@ let currentParams = {
   tempoMode: true,
   step: 1,
   time: 0.1667,
-  reverbGain: 0.3,
-  reverbType: "hall"
+  reverbGain: 0,
+  reverbType: "church"
 };
+let currentParams = { ...defaultParams };
 
 const stepMap = [
   { mult: 0.25 }, { mult: 1/3 }, { mult: 0.5 }, { mult: 2/3 },
   { mult: 1 }, { mult: 1.5 }, { mult: 2 }, { mult: 4 }
 ];
 
-// Disable pitch preservation
 function disablePreservePitch(el) {
   try {
     el.preservesPitch = false;
@@ -38,7 +38,6 @@ function disablePreservePitch(el) {
   } catch {}
 }
 
-// True turntable pitch
 function applyPitch(p) {
   const rate = Math.pow(2, p / 24);
   document.querySelectorAll("audio,video").forEach(el => {
@@ -145,5 +144,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === "GET_PARAMS") sendResponse({ params: currentParams });
+  if (msg.type === "GET_DEFAULTS") sendResponse({ params: defaultParams });
 
 });
