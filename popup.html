@@ -3,73 +3,115 @@
 <head>
   <meta charset="utf-8">
   <title>(((digital delay)))</title>
-  <link rel="stylesheet" href="popup.css">
   <style>
     body {
       font-family: "Courier New", monospace;
       background: #000;
       color: #fff;
-      width: 300px;
+      width: 340px;
       padding: 10px;
       box-sizing: border-box;
       border: 1px dashed #fff;
+      margin: 5px;
     }
 
     .pedal-title {
       text-align: center;
       font-weight: bold;
-      font-size: 14px;
+      font-size: 13px;
       letter-spacing: 1px;
       border-bottom: 1px solid #fff;
       padding-bottom: 4px;
-      margin-bottom: 8px;
-      margin-top: 0px;
+      margin-bottom: 6px;
+      margin-top: 0;
     }
 
-    .knobs {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    /* ── group ── */
+    .group {
+      margin-bottom: 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #fff;
+    }
+    .group:last-child { border-bottom: none; }
+
+    .group-title {
+      font-size: 11px;
+      color: #ccc;
+      letter-spacing: 2px;
+      margin: 6px 0 5px 0;
     }
 
-    .knob {
-      display: flex;
-      flex-direction: column;
+    /* ── control row: label + slider + value all inline ── */
+    .ctrl {
+      display: grid;
+      grid-template-columns: 90px 1fr 46px;
       align-items: center;
-      border: 1px dashed #333;
-      padding: 4px;
-      box-sizing: border-box;
+      gap: 4px;
+      margin-bottom: 5px;
     }
 
-    .knob label {
-      font-size: 12px;
-      margin-bottom: 2px;
-      display: block;
+    .ctrl label {
+      font-size: 10px;
       color: #aaa;
+      white-space: nowrap;
     }
 
+    .readout {
+      font-size: 10px;
+      color: #ccc;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* ── single label + select, aligned to the ctrl grid ── */
+    .ctrl-select {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 5px;
+    }
+    .ctrl-select label {
+      font-size: 10px;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    /* ── LFO checkbox row ── */
+    .lfo-row {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 3px;
+    }
+    .lfo-row label { font-size: 10px; color: #aaa; }
+
+    /* ── dashed sub-divider ── */
+    .subdiv {
+      border: none;
+      border-top: 1px dashed #333;
+      margin: 4px 0;
+    }
+
+    /* ── slider ── */
     input[type="range"] {
       -webkit-appearance: none;
-      width: 90%;
+      width: 100%;
       height: 8px;
-      max-width: 230px;
       background: transparent;
     }
-
     input[type="range"]::-webkit-slider-runnable-track {
       height: 6px;
       background: repeating-linear-gradient(
         to right,
-        #555 0,
-        #555 1px,
-        transparent 2px,
-        transparent 5px
+        #555 0, #555 1px,
+        transparent 2px, transparent 5px
       );
     }
-
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
+      width: 18px;
       height: 12px;
       background: #fff;
       border: 1px solid #000;
@@ -77,197 +119,249 @@
       margin-top: -3px;
     }
 
+    /* ── select ── */
     select {
-      width: 120px;
+      width: 100%;
       background: #000;
       color: #fff;
       border: 1px dashed #555;
       font-family: "Courier New", monospace;
-      padding: 3px;
+      padding: 2px;
+      font-size: 10px;
     }
 
-    .tempo-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      width: 100%;
-    }
-
-    input[type="checkbox"] {
-      accent-color: #fff;
-    }
-
+    /* ── number + checkbox ── */
+    input[type="checkbox"] { accent-color: #fff; vertical-align: middle; }
     input[type="number"] {
       width: 50px;
       background: #000;
       color: #fff;
       border: 1px solid #555;
       font-family: "Courier New", monospace;
+      font-size: 10px;
+      padding: 1px 3px;
     }
 
-    #timeValue {
-      display: block;
-      font-size: 11px;
-      color: #ccc;
-      text-align: right;
-      margin-top: 2px;
+    .tempo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      color: #aaa;
+      margin-bottom: 3px;
+      padding-left: 2px;
     }
 
-    #resetBtn {
+    #resetBtn, #saveBtn, #loadBtn {
       font-family: inherit;
       font-size: 10px;
-      margin-bottom: 5px;
-      margin-top: 3px;
       background: #fff;
+      color: #000;
+      border: none;
       cursor: pointer;
-      width: 70px;
-      height: 24px;
+      height: 20px;
+      padding: 0 6px;
     }
-
-    #resetBtn:hover {
-      background: #999;
-    }
+    #resetBtn:hover, #saveBtn:hover, #loadBtn:hover { background: #999; }
 
     .footer {
-      margin-top: 0px;
+      margin-top: 4px;
       text-align: center;
       font-size: 10px;
       color: #666;
-      padding-top: 0px;
-    margin-bottom: 2px;
     }
-
-    .group {
-      padding: px;
-      margin-bottom: 4px;
-      border-bottom: 1px solid#fff;
-    }
-
-    .group-title {
-      font-size: 15px;
-      color: #ccc;
-      text-align: left;
-      margin-bottom: 6px;
-      letter-spacing: 1px;
-    }
-
-    .group .knob {
-      margin-bottom: 6px;
-    }
-
-
   </style>
 </head>
 
 <body>
-  <div class="pedal">
-    <h2 class="pedal-title">┌─(((digital delay)))─┐</h2>
+<div class="pedal">
+  <h2 class="pedal-title">┌─(((digital delay)))─┐</h2>
 
-<div class="knobs">
+  <div class="knobs">
 
-  <!-- DELAY SECTION -->
-  <div class="group">
-    <div class="group-title">[ DELAY ]</div>
+    <!-- FILTER -->
+    <div class="group">
+      <div class="group-title">[ FILTER ]</div>
 
-    <div class="knob">
-      <label for="level">[ DELAY GAIN ]</label>
-      <input type="range" id="level" min="0" max="100">
-    </div>
+      <div class="ctrl">
+        <label for="filterFreq">[ FREQUENCY ]</label>
+        <input type="range" id="filterFreq" min="0" max="1000" step="1">
+        <span class="readout" id="filterFreqValue">---</span>
+      </div>
 
-    <div class="knob">
-      <label for="feedback">[ FEEDBACK ]</label>
-      <input type="range" id="feedback" min="0" max="99">
-    </div>
+      <div class="ctrl">
+        <label for="filterQ">[ Q ]</label>
+        <input type="range" id="filterQ" min="0" max="1000" step="1">
+        <span class="readout" id="filterQValue">---</span>
+      </div>
 
-    <div class="knob">
-      <label for="time" id="timeLabel">[ DELAY TIME ]</label>
-      <input type="range" id="time" min="0" max="7">
-      <span id="timeValue">---</span>
-    </div>
+      <div class="ctrl-select">
+        <label>[ TYPE ]</label>
+        <select id="filterType">
+          <option value="lowpass">lowpass</option>
+          <option value="highpass">highpass</option>
+          <option value="bandpass">bandpass</option>
+        </select>
+      </div>
 
-    <div class="knob">
-      <div class="tempo-row">
-        <label>
-          <input type="checkbox" id="tempoMode" checked>
-          [ TEMPO-LOCK ]
-        </label>
-        <input type="number" id="bpm" min="20" max="300">
+      <hr class="subdiv">
+
+      <!-- LFO sub-section -->
+      <div class="lfo-row">
+        <label>[ LFO ] <input type="checkbox" id="lfoOn"> on</label>
+      </div>
+
+      <div id="lfoParams" style="display:none;">
+        <div class="ctrl">
+          <label for="lfoDepth">[ LFO DEPTH ]</label>
+          <input type="range" id="lfoDepth" min="0" max="1000" step="1">
+          <span class="readout" id="lfoDepthValue">---</span>
+        </div>
+
+        <div class="tempo-row" style="margin-bottom:3px;">
+          <label>
+            <input type="checkbox" id="lfoTempoMode"> [ TEMPO-LOCK ] -- bpm in delay
+          </label>
+        </div>
+
+        <div class="ctrl" id="lfoRateCtrl">
+          <label for="lfoRate">[ LFO RATE ]</label>
+          <input type="range" id="lfoRate" min="0" max="1000" step="1">
+          <span class="readout" id="lfoRateValue">---</span>
+        </div>
+
+        <div class="ctrl" id="lfoStepCtrl" style="display:none;">
+          <label for="lfoStep">[ LFO STEP ]</label>
+          <input type="range" id="lfoStep" min="0" max="6" step="1">
+          <span class="readout" id="lfoStepValue">---</span>
+        </div>
+
+        <div class="ctrl-select">
+          <label>[ WAVE ]</label>
+          <select id="lfoWave">
+            <option value="sine">sine</option>
+            <option value="triangle">triangle</option>
+            <option value="square">square</option>
+            <option value="sawtooth">saw</option>
+          </select>
+        </div>
       </div>
     </div>
+
+    <!-- DELAY -->
+    <div class="group">
+      <div class="group-title">[ DELAY ]</div>
+
+      <div class="ctrl">
+        <label for="level">[ GAIN ]</label>
+        <input type="range" id="level" min="0" max="100">
+        <span class="readout" id="levelValue">---</span>
+      </div>
+
+      <div class="ctrl">
+        <label for="feedback">[ FEEDBACK ]</label>
+        <input type="range" id="feedback" min="0" max="99">
+        <span class="readout" id="feedbackValue">---</span>
+      </div>
+
+      <div class="ctrl">
+        <label for="time" id="timeLabel">[ TIME ]</label>
+        <input type="range" id="time" min="0" max="7">
+        <span class="readout" id="timeValue">---</span>
+      </div>
+
+      <div class="tempo-row" style="justify-content: space-between;">
+        <label>
+          <input type="checkbox" id="tempoMode" checked> [ TEMPO-LOCK ]
+        </label>
+        <span>
+          <input type="number" id="bpm" min="20" max="300">
+          <span style="font-size:10px;">bpm</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- REVERB -->
+    <div class="group">
+      <div class="group-title">[ REVERB ]</div>
+
+      <div class="ctrl">
+        <label for="reverb">[ GAIN ]</label>
+        <input type="range" id="reverb" min="0" max="100">
+        <span class="readout" id="reverbValue">---</span>
+      </div>
+
+      <div class="ctrl-select">
+        <label>[ IR ]</label>
+        <select id="reverbSelect">
+          <option value="bathroom">bathroom</option>
+          <option value="black-lodge">black-lodge</option>
+          <option value="cathedral">cathedral</option>
+          <option value="cave">cave</option>
+          <option value="cavern">cavern</option>
+          <option value="church">church</option>
+          <option value="concert-hall">concert-hall</option>
+          <option value="crag">crag</option>
+          <option value="damp-echo">damp-echo</option>
+          <option value="dark">dark</option>
+          <option value="dungeon">dungeon</option>
+          <option value="forest">forest</option>
+          <option value="glass">glass</option>
+          <option value="hall">hall</option>
+          <option value="hall2">hall2</option>
+          <option value="hall3">hall3</option>
+          <option value="locker1">locker1</option>
+          <option value="locker2">locker2</option>
+          <option value="marble">marble</option>
+          <option value="mine">mine</option>
+          <option value="reflection">reflection</option>
+          <option value="reverse">reverse</option>
+          <option value="room-small">room-small</option>
+          <option value="room">room</option>
+          <option value="slinky">slinky</option>
+          <option value="soften">soften</option>
+          <option value="spring">spring</option>
+          <option value="spring2">spring2</option>
+          <option value="thing">thing</option>
+          <option value="tokyo">tokyo</option>
+          <option value="tunnel">tunnel</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- GLOBAL / OUTPUT -->
+    <div class="group">
+      <div class="group-title">[ GLOBAL / OUTPUT ]</div>
+
+      <div class="ctrl">
+        <label for="pitch">[ PITCH ]</label>
+        <input type="range" id="pitch" min="-24" max="24" step="1">
+        <span class="readout" id="pitchValue">---</span>
+      </div>
+
+      <div class="ctrl">
+        <label for="dry">[ DRY OUT ]</label>
+        <input type="range" id="dry" min="0" max="100">
+        <span class="readout" id="dryValue">---</span>
+      </div>
+
+      <div style="display:flex; gap:4px; margin: 10px 0 2px 0; justify-content: space-evenly;">
+        <button id="resetBtn">[ RESET ]</button>
+        <button id="saveBtn">[ SAVE ]</button>
+        <button id="loadBtn">[ LOAD ]</button>
+      </div>
+      <input type="file" id="loadFile" accept=".json" style="display:none;">
+    </div>
+
   </div>
 
-  <!-- REVERB SECTION -->
-  <div class="group">
-    <div class="group-title">[ REVERB ]</div>
-
-    <div class="knob">
-      <label for="reverb">[ REVERB GAIN ]</label>
-      <input type="range" id="reverb" min="0" max="100">
-    </div>
-
-    <div class="knob">
-      <select id="reverbSelect">
-        <option value="bathroom">bathroom</option>
-        <option value="black-lodge">black-lodge</option>
-        <option value="cathedral">cathedral</option>
-        <option value="cave">cave</option>
-        <option value="cavern">cavern</option>
-        <option value="church">church</option>
-        <option value="concert-hall">concert-hall</option>
-        <option value="crag">crag</option>
-        <option value="damp-echo">damp-echo</option>
-        <option value="dark">dark</option>
-        <option value="dungeon">dungeon</option>
-        <option value="forest">forest</option>
-        <option value="glass">glass</option>
-        <option value="hall">hall</option>
-        <option value="hall2">hall2</option>
-        <option value="hall3">hall3</option>
-        <option value="locker1">locker1</option>
-        <option value="locker2">locker2</option>
-        <option value="marble">marble</option>
-        <option value="mine">mine</option>
-        <option value="reflection">reflection</option>
-        <option value="reverse">reverse</option>
-        <option value="room-small">room-small</option>
-        <option value="room">room</option>
-        <option value="slinky">slinky</option>
-        <option value="spring">spring</option>
-        <option value="spring2">spring2</option>
-        <option value="thing">thing</option>
-        <option value="tokyo">tokyo</option>
-        <option value="tunnel">tunnel</option>
-      </select>
-    </div>
+  <div class="footer">
+    <a href="https://digitalrecords.net/" target="_blank" style="color:#666; text-decoration:none;">
+      └─ tab delay module from f.lower() ─┘<br>//digital/records\_
+    </a>
   </div>
-
-  <!-- GLOBAL / OUTPUT SECTION -->
-  <div class="group">
-    <div class="group-title">[ GLOBAL / OUTPUT ]</div>
-
-    <div class="knob">
-      <label for="pitch">[ PITCH ]</label>
-      <input type="range" id="pitch" min="-12" max="12" step="1">
-      <span id="pitchValue">---</span>
-    </div>
-
-    <div class="knob">
-      <label for="dry">[ DRY OUT ]</label>
-      <input type="range" id="dry" min="0" max="100">
-    </div>
-
-    <button id="resetBtn">[ RESET ]</button>
-  </div>
-
 </div>
 
-
-    <div class="footer">
-      └─ tab delay module from f.lower() ─┘<br>//digital/records\_
-    </div>
-  </div>
-
-  <script src="popup.js"></script>
+<script src="popup.js"></script>
 </body>
 </html>
