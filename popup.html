@@ -4,61 +4,169 @@
   <meta charset="utf-8">
   <title>(((digital delay)))</title>
   <style>
+    :root {
+      --win-face: #c0c0c0;
+      --win-hi:   #ffffff;
+      --win-lo:   #808080;
+      --win-dk:   #000000;
+      --crt-bg:   #000000;
+      --crt-fg:   #f0f0f0;
+      --crt-mid:  #cfcfcf;
+      --crt-dim:  #8a8a8a;
+    }
+
+    * { box-sizing: border-box; border-radius: 0; }
+
     body {
+      margin: 0;
+      padding: 0px;
+      background: var(--win-face);
       font-family: "Courier New", monospace;
-      background: #000;
-      color: #fff;
-      width: 340px;
-      padding: 10px;
-      box-sizing: border-box;
-      border: 1px dashed #fff;
-      margin: 5px;
     }
 
-    .pedal-title {
-      text-align: center;
+    /* ── outer window frame ── */
+    .win95-window {
+      width: 372px;
+      background: var(--crt-bg);
+      border: 1px solid var(--win-dk);
+      box-shadow:
+        inset 1px 1px 0 var(--win-hi),
+        inset -1px -1px 0 var(--win-lo);
+    }
+
+    /* ── title bar ── */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 4px 4px 7px;
+      border-bottom: 2px solid var(--win-lo);
+    }
+    .titlebar .title-text {
+      color: var(--crt-fg);
       font-weight: bold;
-      font-size: 13px;
-      letter-spacing: 1px;
-      border-bottom: 1px solid #fff;
-      padding-bottom: 4px;
-      margin-bottom: 6px;
-      margin-top: 0;
-    }
-
-    /* ── group ── */
-    .group {
-      margin-bottom: 0;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #fff;
-    }
-    .group:last-child { border-bottom: none; }
-
-    .group-title {
       font-size: 11px;
-      color: #ccc;
       letter-spacing: 2px;
-      margin: 6px 0 5px 0;
+    }
+    .win-controls { display: flex; gap: 3px; }
+    .win-box {
+      width: 14px;
+      height: 12px;
+      background: var(--win-face);
+      color: #000;
+      font-size: 9px;
+      line-height: 12px;
+      text-align: center;
+      font-family: "Courier New", monospace;
+      box-shadow: inset 1px 1px 0 var(--win-hi), inset -1px -1px 0 var(--win-dk);
+      user-select: none;
+    }
+    /* Close button image styling */
+    .close-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .close-box img {
+      width: 6px;
+      height: 6px;
+      object-fit: contain;
+      display: block;
+    }
+    /* ── body: pitch rail + knob column, side by side ── */
+    .win95-body {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      padding: 8px 10px 4px;
+    }
+
+    /* ── pitch rail (vertical fader) ── */
+    .pitch-rail {
+      width: 30px;
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: left;
+      gap: 6px;
+      padding: 6px 0 4px;
+      border-right: 1px solid var(--win-lo);
+      box-shadow: inset -1px 0 0 var(--win-dk);
+    }
+    .pitch-rail .rail-label {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      margin-left: 4px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--crt-mid);
+    }
+    .pitch-rail input[type="range"] {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 18px;
+      min-height: 256px;
+      margin: 2px 0;
+    }
+    .pitch-rail .readout {
+      font-size: 10px;
+      color: var(--crt-dim);
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      margin-left: 4px;
+    }
+
+    .knobs { flex: 1; min-width: 0; }
+
+    /* ── group: classic Win95 GroupBox — label breaks the top border ── */
+    .group {
+      position: relative;
+      border: 1px solid var(--win-lo);
+      box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #2a2a2a;
+      margin-top: 11px;
+      padding: 11px 8px 8px;
+    }
+    .group:first-child { margin-top: 4px; }
+    .group-title {
+      position: absolute;
+      top: -8px;
+      left: 8px;
+      background: var(--crt-bg);
+      padding: 0 4px;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--crt-mid);
+    }
+
+    /* ── preset buttons: live outside the bordered groups ── */
+    .preset-row {
+      display: flex;
+      gap: 4px;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid var(--win-lo);
+      box-shadow: 0 -1px 0 #000;
     }
 
     /* ── control row: label + slider + value all inline ── */
     .ctrl {
       display: grid;
-      grid-template-columns: 90px 1fr 46px;
+      grid-template-columns: 88px 1fr 44px;
       align-items: center;
       gap: 4px;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
-
     .ctrl label {
       font-size: 10px;
-      color: #aaa;
+      color: var(--crt-dim);
       white-space: nowrap;
     }
-
     .readout {
       font-size: 10px;
-      color: #ccc;
+      color: var(--crt-dim);
       text-align: right;
       white-space: nowrap;
     }
@@ -66,298 +174,315 @@
     /* ── single label + select, aligned to the ctrl grid ── */
     .ctrl-select {
       display: grid;
-      grid-template-columns: 90px 1fr;
+      grid-template-columns: 88px 1fr;
       align-items: center;
       gap: 4px;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
     .ctrl-select label {
       font-size: 10px;
-      color: #aaa;
+      color: var(--crt-dim);
       white-space: nowrap;
     }
 
     /* ── LFO checkbox row ── */
     .lfo-row {
       display: grid;
-      grid-template-columns: 90px 1fr;
+      grid-template-columns: 88px 1fr;
       align-items: center;
       gap: 4px;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
-    .lfo-row label { font-size: 10px; color: #aaa; }
+    .lfo-row label { font-size: 10px; color: var(--crt-dim); }
 
-    /* ── dashed sub-divider ── */
+    /* ── sub-divider ── */
     .subdiv {
       border: none;
-      border-top: 1px dashed #333;
-      margin: 4px 0;
+      border-top: 1px solid var(--win-lo);
+      box-shadow: 0 1px 0 #000;
+      margin: 6px 0;
     }
 
-    /* ── slider ── */
+    /* ── slider: sunken groove, raised pixel thumb ── */
     input[type="range"] {
       -webkit-appearance: none;
       width: 100%;
-      height: 8px;
+      height: 14px;
       background: transparent;
+      margin: 0;
     }
     input[type="range"]::-webkit-slider-runnable-track {
       height: 6px;
-      background: repeating-linear-gradient(
-        to right,
-        #555 0, #555 1px,
-        transparent 2px, transparent 5px
-      );
+      background: #0a0a0a;
+      border: 1px solid var(--win-lo);
+      box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 #3a3a3a;
     }
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 18px;
-      height: 12px;
-      background: #fff;
-      border: 1px solid #000;
+      width: 12px;
+      height: 16px;
+      background: var(--win-face);
+      box-shadow: inset 1px 1px 0 var(--win-hi), inset -1px -1px 0 var(--win-dk);
+      margin-top: -6px;
       cursor: pointer;
-      margin-top: -3px;
     }
 
-    /* ── select ── */
-    select {
+    /* ── select / number: sunken field ── */
+    select, input[type="number"] {
       width: 100%;
       background: #000;
-      color: #fff;
-      border: 1px dashed #555;
+      color: var(--crt-fg);
+      border: 1px solid var(--win-dk);
+      box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 var(--win-lo);
       font-family: "Courier New", monospace;
-      padding: 2px;
       font-size: 10px;
+      padding: 2px 3px;
     }
+    input[type="number"] { width: 50px; }
 
-    /* ── number + checkbox ── */
-    input[type="checkbox"] { accent-color: #fff; vertical-align: middle; }
-    input[type="number"] {
-      width: 50px;
-      background: #000;
-      color: #fff;
-      border: 1px solid #555;
-      font-family: "Courier New", monospace;
-      font-size: 10px;
-      padding: 1px 3px;
-    }
+    input[type="checkbox"] { accent-color: var(--win-face); vertical-align: middle; }
 
     .tempo-row {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 10px;
-      color: #aaa;
-      margin-bottom: 3px;
+      color: var(--crt-dim);
+      margin-bottom: 4px;
       padding-left: 2px;
     }
 
-    #resetBtn, #saveBtn, #loadBtn {
+    /* ── buttons: raised Win95 bevel, sunken on press ── */
+    button {
       font-family: inherit;
       font-size: 10px;
-      background: #fff;
+      background: var(--win-face);
       color: #000;
       border: none;
       cursor: pointer;
-      height: 20px;
-      padding: 0 6px;
+      height: 21px;
+      width: 100px;
+      padding: 0 8px;
+      box-shadow:
+        inset 1px 1px 0 var(--win-hi),
+        inset -1px -1px 0 var(--win-dk);
     }
-    #resetBtn:hover, #saveBtn:hover, #loadBtn:hover { background: #999; }
+    button:active:not(:disabled) {
+      box-shadow:
+        inset -1px -1px 0 var(--win-hi),
+        inset 1px 1px 0 var(--win-dk);
+      padding: 1px 7px 0 9px;
+    }
+    button:disabled {
+      color: var(--win-lo);
+      cursor: default;
+      box-shadow: inset 1px 1px 0 var(--win-hi), inset -1px -1px 0 #4a4a4a;
+    }
 
     .footer {
-      margin-top: 4px;
+      margin-top: 6px;
+      padding: 6px 0 8px;
       text-align: center;
       font-size: 10px;
-      color: #666;
+      color: var(--crt-dim);
+      border-top: 1px solid var(--win-lo);
+      box-shadow: 0 -1px 0 #000;
     }
   </style>
 </head>
 
 <body>
-<div class="pedal">
-  <h2 class="pedal-title">┌─(((digital delay)))─┐</h2>
+<div class="win95-window">
 
-  <div class="knobs">
+  <div class="titlebar">
+    <span class="title-text">(((digital delay)))</span>
+    <div class="win-controls">
+      <span class="win-box">_</span>
+      <span class="win-box">&#9633;</span>
+      <span class="win-box close-box">
+        <a href="https://digitalrecords.net/" target="_blank" style="text-decoration: none;">
+          <img src="icons\drlogo.png" alt="Close">
+        </a>
+      </span>
 
-    <!-- FILTER -->
-    <div class="group">
-      <div class="group-title">[ FILTER ]</div>
+    </div>
+  </div>
 
-      <div class="ctrl">
-        <label for="filterFreq">[ FREQUENCY ]</label>
-        <input type="range" id="filterFreq" min="0" max="1000" step="1">
-        <span class="readout" id="filterFreqValue">---</span>
-      </div>
+  <div class="win95-body">
 
-      <div class="ctrl">
-        <label for="filterQ">[ Q ]</label>
-        <input type="range" id="filterQ" min="0" max="1000" step="1">
-        <span class="readout" id="filterQValue">---</span>
-      </div>
+    <!-- PITCH RAIL -->
+    <div class="pitch-rail">
+      <span class="rail-label">[ PITCH ]</span>
+      <input type="range" id="pitch" min="-24" max="24" step="1">
+      <span class="readout" id="pitchValue">---</span>
+    </div>
 
-      <div class="ctrl-select">
-        <label>[ TYPE ]</label>
-        <select id="filterType">
-          <option value="lowpass">lowpass</option>
-          <option value="highpass">highpass</option>
-          <option value="bandpass">bandpass</option>
-        </select>
-      </div>
+    <div class="knobs">
 
-      <hr class="subdiv">
+      <!-- FILTER -->
+      <div class="group">
+        <div class="group-title">[ FILTER ]</div>
 
-      <!-- LFO sub-section -->
-      <div class="lfo-row">
-        <label>[ LFO ] <input type="checkbox" id="lfoOn"> on</label>
-      </div>
-
-      <div id="lfoParams" style="display:none;">
         <div class="ctrl">
-          <label for="lfoDepth">[ LFO DEPTH ]</label>
-          <input type="range" id="lfoDepth" min="0" max="1000" step="1">
-          <span class="readout" id="lfoDepthValue">---</span>
+          <label for="filterFreq">[ FREQUENCY ]</label>
+          <input type="range" id="filterFreq" min="0" max="1000" step="1">
+          <span class="readout" id="filterFreqValue">---</span>
         </div>
 
-        <div class="tempo-row" style="margin-bottom:3px;">
-          <label>
-            <input type="checkbox" id="lfoTempoMode"> [ TEMPO-LOCK ] -- bpm in delay
-          </label>
-        </div>
-
-        <div class="ctrl" id="lfoRateCtrl">
-          <label for="lfoRate">[ LFO RATE ]</label>
-          <input type="range" id="lfoRate" min="0" max="1000" step="1">
-          <span class="readout" id="lfoRateValue">---</span>
-        </div>
-
-        <div class="ctrl" id="lfoStepCtrl" style="display:none;">
-          <label for="lfoStep">[ LFO STEP ]</label>
-          <input type="range" id="lfoStep" min="0" max="6" step="1">
-          <span class="readout" id="lfoStepValue">---</span>
+        <div class="ctrl">
+          <label for="filterQ">[ Q ]</label>
+          <input type="range" id="filterQ" min="0" max="1000" step="1">
+          <span class="readout" id="filterQValue">---</span>
         </div>
 
         <div class="ctrl-select">
-          <label>[ WAVE ]</label>
-          <select id="lfoWave">
-            <option value="sine">sine</option>
-            <option value="triangle">triangle</option>
-            <option value="square">square</option>
-            <option value="sawtooth">saw</option>
+          <label>[ TYPE ]</label>
+          <select id="filterType">
+            <option value="lowpass">lowpass</option>
+            <option value="highpass">highpass</option>
+            <option value="bandpass">bandpass</option>
           </select>
         </div>
-      </div>
-    </div>
 
-    <!-- DELAY -->
-    <div class="group">
-      <div class="group-title">[ DELAY ]</div>
+        <hr class="subdiv">
 
-      <div class="ctrl">
-        <label for="level">[ GAIN ]</label>
-        <input type="range" id="level" min="0" max="100">
-        <span class="readout" id="levelValue">---</span>
-      </div>
+        <!-- LFO sub-section -->
+        <div class="lfo-row">
+          <label>[ LFO ] <input type="checkbox" id="lfoOn"> on</label>
+        </div>
 
-      <div class="ctrl">
-        <label for="feedback">[ FEEDBACK ]</label>
-        <input type="range" id="feedback" min="0" max="99">
-        <span class="readout" id="feedbackValue">---</span>
-      </div>
+        <div id="lfoParams" style="display:none;">
+          <div class="ctrl">
+            <label for="lfoDepth">[ LFO DEPTH ]</label>
+            <input type="range" id="lfoDepth" min="0" max="1000" step="1">
+            <span class="readout" id="lfoDepthValue">---</span>
+          </div>
 
-      <div class="ctrl">
-        <label for="time" id="timeLabel">[ TIME ]</label>
-        <input type="range" id="time" min="0" max="7">
-        <span class="readout" id="timeValue">---</span>
-      </div>
+          <div class="tempo-row" style="justify-content: center;">
+            <label>
+              <input type="checkbox" id="lfoTempoMode"> [ TEMPO-LOCK ] to bpm in delay
+            </label>
+          </div>
 
-      <div class="tempo-row" style="justify-content: space-between;">
-        <label>
-          <input type="checkbox" id="tempoMode" checked> [ TEMPO-LOCK ]
-        </label>
-        <span>
-          <input type="number" id="bpm" min="20" max="300">
-          <span style="font-size:10px;">bpm</span>
-        </span>
-      </div>
-    </div>
+          <div class="ctrl" id="lfoRateCtrl">
+            <label for="lfoRate">[ LFO RATE ]</label>
+            <input type="range" id="lfoRate" min="0" max="1000" step="1">
+            <span class="readout" id="lfoRateValue">---</span>
+          </div>
 
-    <!-- REVERB -->
-    <div class="group">
-      <div class="group-title">[ REVERB ]</div>
+          <div class="ctrl" id="lfoStepCtrl" style="display:none;">
+            <label for="lfoStep">[ LFO STEP ]</label>
+            <input type="range" id="lfoStep" min="0" max="6" step="1">
+            <span class="readout" id="lfoStepValue">---</span>
+          </div>
 
-      <div class="ctrl">
-        <label for="reverb">[ GAIN ]</label>
-        <input type="range" id="reverb" min="0" max="100">
-        <span class="readout" id="reverbValue">---</span>
-      </div>
-
-      <div class="ctrl-select">
-        <label>[ IR ]</label>
-        <select id="reverbSelect">
-          <option value="bathroom">bathroom</option>
-          <option value="black-lodge">black-lodge</option>
-          <option value="cathedral">cathedral</option>
-          <option value="cave">cave</option>
-          <option value="cavern">cavern</option>
-          <option value="church">church</option>
-          <option value="concert-hall">concert-hall</option>
-          <option value="crag">crag</option>
-          <option value="damp-echo">damp-echo</option>
-          <option value="dark">dark</option>
-          <option value="dungeon">dungeon</option>
-          <option value="forest">forest</option>
-          <option value="glass">glass</option>
-          <option value="hall">hall</option>
-          <option value="hall2">hall2</option>
-          <option value="hall3">hall3</option>
-          <option value="locker1">locker1</option>
-          <option value="locker2">locker2</option>
-          <option value="marble">marble</option>
-          <option value="mine">mine</option>
-          <option value="reflection">reflection</option>
-          <option value="reverse">reverse</option>
-          <option value="room-small">room-small</option>
-          <option value="room">room</option>
-          <option value="slinky">slinky</option>
-          <option value="soften">soften</option>
-          <option value="spring">spring</option>
-          <option value="spring2">spring2</option>
-          <option value="thing">thing</option>
-          <option value="tokyo">tokyo</option>
-          <option value="tunnel">tunnel</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- GLOBAL / OUTPUT -->
-    <div class="group">
-      <div class="group-title">[ GLOBAL / OUTPUT ]</div>
-
-      <div class="ctrl">
-        <label for="pitch">[ PITCH ]</label>
-        <input type="range" id="pitch" min="-24" max="24" step="1">
-        <span class="readout" id="pitchValue">---</span>
+          <div class="ctrl-select">
+            <label>[ WAVE ]</label>
+            <select id="lfoWave">
+              <option value="sine">sine</option>
+              <option value="triangle">triangle</option>
+              <option value="square">square</option>
+              <option value="sawtooth">saw</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div class="ctrl">
-        <label for="dry">[ DRY OUT ]</label>
-        <input type="range" id="dry" min="0" max="100">
-        <span class="readout" id="dryValue">---</span>
+      <!-- DELAY -->
+      <div class="group">
+        <div class="group-title">[ DELAY ]</div>
+
+        <div class="ctrl">
+          <label for="delayMix">[ MIX ]</label>
+          <input type="range" id="delayMix" min="0" max="100">
+          <span class="readout" id="delayMixValue">---</span>
+        </div>
+
+        <div class="ctrl">
+          <label for="feedback">[ FEEDBACK ]</label>
+          <input type="range" id="feedback" min="0" max="99">
+          <span class="readout" id="feedbackValue">---</span>
+        </div>
+
+        <div class="ctrl">
+          <label for="time" id="timeLabel">[ TIME ]</label>
+          <input type="range" id="time" min="0" max="7">
+          <span class="readout" id="timeValue">---</span>
+        </div>
+
+        <div class="tempo-row" style="justify-content: center;">
+          <label>
+            <input type="checkbox" id="tempoMode" checked> [ TEMPO-LOCK ] to
+          </label>
+          <span>
+            <input type="number" id="bpm" min="20" max="300">
+            <span style="font-size:10px;">bpm</span>
+          </span>
+        </div>
       </div>
 
-      <div style="display:flex; gap:4px; margin: 10px 0 2px 0; justify-content: space-evenly;">
+      <!-- REVERB -->
+      <div class="group">
+        <div class="group-title">[ REVERB ]</div>
+
+        <div class="ctrl">
+          <label for="reverbMix">[ MIX ]</label>
+          <input type="range" id="reverbMix" min="0" max="100">
+          <span class="readout" id="reverbMixValue">---</span>
+        </div>
+
+        <div class="ctrl-select">
+          <label>[ IR ]</label>
+          <select id="reverbSelect">
+            <optgroup label="-- built-in --">
+              <option value="bathroom">bathroom</option>
+              <option value="cavern">cavern</option>
+              <option value="church">church</option>
+              <option value="concert-hall">concert-hall</option>
+              <option value="damp-echo">damp-echo</option>
+              <option value="dark">dark</option>
+              <option value="dungeon">dungeon</option>
+              <option value="glass">glass</option>
+              <option value="hall">hall</option>
+              <option value="mine">mine</option>
+              <option value="reflection">reflection</option>
+              <option value="reverse">reverse</option>
+              <option value="room">room</option>
+              <option value="room-small">room-small</option>
+              <option value="slinky">slinky</option>
+              <option value="soften">soften</option>
+              <option value="spring">spring</option>
+              <option value="thing">thing</option>
+              <option value="tokyo">tokyo</option>
+              <option value="tunnel">tunnel</option>
+            </optgroup>
+            <optgroup label="-- custom --" id="customIrGroup"></optgroup>
+          </select>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-top:4px;">
+          <span class="readout" id="customIrStorageValue" style="text-align:left;">---</span>
+          <div style="display:flex; gap:6px;">
+            <button id="importIrBtn">[ IMPORT IR ]</button>
+            <button id="deleteIrBtn" disabled>[ DELETE IR ]</button>
+          </div>
+        </div>
+        <input type="file" id="importIrFile" accept=".wav" multiple style="display:none;">
+      </div>
+
+      <div class="preset-row">
         <button id="resetBtn">[ RESET ]</button>
         <button id="saveBtn">[ SAVE ]</button>
         <button id="loadBtn">[ LOAD ]</button>
       </div>
       <input type="file" id="loadFile" accept=".json" style="display:none;">
-    </div>
 
+    </div>
   </div>
 
   <div class="footer">
-    <a href="https://digitalrecords.net/" target="_blank" style="color:#666; text-decoration:none;">
-      └─ tab delay module from f.lower() ─┘<br>//digital/records\_
+    <a href="https://digitalrecords.net/" target="_blank" style="color:inherit; text-decoration:none;">
+      tab audio fx module from f.lower() + //digital/records\_
     </a>
   </div>
 </div>

@@ -1,13 +1,15 @@
 let audioCtx;
 
-let dryNode;
 let filterNode;
 let delayNode;
-let delayGain;
+let delayDryGain;
+let delayWetGain;
+let delayMixBus;
 let feedbackNode;
 
 let reverbNode;
-let reverbGainNode;
+let reverbDryGain;
+let reverbWetGain;
 
 let lfoNode;
 let lfoDepthNode;
@@ -17,15 +19,14 @@ let loadedImpulse = null;
 let impulseLoading = false;
 
 let defaultParams = {
-  dry: 1.0,
-  level: 0.5,
+  delayMix: 0.35,
   feedback: 0.6,
   pitch: 0,
   bpm: 120,
   tempoMode: true,
   step: 1,
   time: 0.1667,
-  reverbGain: 0,
+  reverbMix: 0,
   reverbType: "church",
   filterFreq: 20000,
   filterType: "lowpass",
@@ -61,14 +62,32 @@ function applyPitch(p) {
   });
 }
 
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
 async function loadImpulse(type) {
   if (!audioCtx) return;
   if (type === loadedImpulse || impulseLoading) return;
 
   impulseLoading = true;
   try {
-    const resp = await fetch(chrome.runtime.getURL(`impulse/${type}.wav`));
-    const buf = await resp.arrayBuffer();
+    let buf;
+    if (type.startsWith("custom:")) {
+      // User-imported IR, persisted in chrome.storage.local by the popup —
+      // not a bundled asset, so no fetch() against the extension package.
+      const key = `customIR:${type.slice("custom:".length)}`;
+      const result = await chrome.storage.local.get(key);
+      const entry = result[key];
+      if (!entry) throw new Error(`Custom IR "${type}" not found in storage`);
+      buf = base64ToArrayBuffer(entry.dataBase64);
+    } else {
+      const resp = await fetch(chrome.runtime.getURL(`impulse/${type}.wav`));
+      buf = await resp.arrayBuffer();
+    }
     const decoded = await audioCtx.decodeAudioData(buf);
     reverbNode.buffer = decoded;
     loadedImpulse = type;
@@ -143,19 +162,37 @@ function calcMakeupGain(params) {
   return 1.0;
 }
 
+// Split blend: 0-50% holds dry at full and linearly brings wet in underneath
+// it (like a pedal "blend" control — wet is added on top, dry never dips).
+// 50-100% holds wet at full and linearly fades dry out. Unlike an equal-power
+// crossfade, both signals reach unity gain somewhere in the sweep instead of
+// being attenuated everywhere except the two extremes, so the effect reads
+// as louder/punchier through the whole knob range.
+function dryWetMix(m) {
+  m = Math.max(0, Math.min(1, m));
+  if (m <= 0.5) {
+    return { dry: 1, wet: m * 2 };
+  }
+  return { dry: (1 - m) * 2, wet: 1 };
+}
+
 function setupAudio() {
   if (audioCtx) return;
 
   audioCtx = new AudioContext();
 
-  delayNode = audioCtx.createDelay(5);
-  delayGain = audioCtx.createGain();
-  feedbackNode = audioCtx.createGain();
-  dryNode = audioCtx.createGain();
   filterNode = audioCtx.createBiquadFilter();
   makeupGainNode = audioCtx.createGain();
+
+  delayNode = audioCtx.createDelay(5);
+  feedbackNode = audioCtx.createGain();
+  delayDryGain = audioCtx.createGain();
+  delayWetGain = audioCtx.createGain();
+  delayMixBus = audioCtx.createGain(); // fixed unity gain — summing point feeding stage 2
+
   reverbNode = audioCtx.createConvolver();
-  reverbGainNode = audioCtx.createGain();
+  reverbDryGain = audioCtx.createGain();
+  reverbWetGain = audioCtx.createGain();
 
   filterNode.type = currentParams.filterType;
   filterNode.frequency.value = currentParams.filterFreq;
@@ -163,10 +200,15 @@ function setupAudio() {
   makeupGainNode.gain.value = calcMakeupGain(currentParams);
 
   delayNode.delayTime.value = currentParams.time;
-  delayGain.gain.value = currentParams.level;
   feedbackNode.gain.value = currentParams.feedback;
-  dryNode.gain.value = currentParams.dry;
-  reverbGainNode.gain.value = currentParams.reverbGain;
+
+  const delayMix = dryWetMix(currentParams.delayMix);
+  delayDryGain.gain.value = delayMix.dry;
+  delayWetGain.gain.value = delayMix.wet;
+
+  const reverbMix = dryWetMix(currentParams.reverbMix);
+  reverbDryGain.gain.value = reverbMix.dry;
+  reverbWetGain.gain.value = reverbMix.wet;
 
   loadImpulse(currentParams.reverbType);
 
@@ -183,19 +225,21 @@ function setupAudio() {
       src.connect(filterNode);
       filterNode.connect(makeupGainNode);
 
-      // dry
-      makeupGainNode.connect(dryNode);
-      dryNode.connect(audioCtx.destination);
+      // stage 1: delay wet/dry crossfade, summed on delayMixBus
+      makeupGainNode.connect(delayDryGain);
+      delayDryGain.connect(delayMixBus);
 
-      // delay
       makeupGainNode.connect(delayNode);
-      delayNode.connect(delayGain);
-      delayGain.connect(audioCtx.destination);
+      delayNode.connect(delayWetGain);
+      delayWetGain.connect(delayMixBus);
 
-      // reverb (from delay, wet-only)
-      delayNode.connect(reverbNode);
-      reverbNode.connect(reverbGainNode);
-      reverbGainNode.connect(audioCtx.destination);
+      // stage 2: reverb wet/dry crossfade, fed by stage 1's combined output
+      delayMixBus.connect(reverbDryGain);
+      reverbDryGain.connect(audioCtx.destination);
+
+      delayMixBus.connect(reverbNode);
+      reverbNode.connect(reverbWetGain);
+      reverbWetGain.connect(audioCtx.destination);
 
       applyPitch(currentParams.pitch);
 
@@ -216,10 +260,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     applyPitch(currentParams.pitch);
 
     if (audioCtx) {
-      dryNode.gain.value = currentParams.dry;
-      delayGain.gain.value = currentParams.level;
+      const delayMix = dryWetMix(currentParams.delayMix);
+      delayDryGain.gain.value = delayMix.dry;
+      delayWetGain.gain.value = delayMix.wet;
+
+      const reverbMix = dryWetMix(currentParams.reverbMix);
+      reverbDryGain.gain.value = reverbMix.dry;
+      reverbWetGain.gain.value = reverbMix.wet;
+
       feedbackNode.gain.value = currentParams.feedback;
-      reverbGainNode.gain.value = currentParams.reverbGain;
 
       filterNode.frequency.value = currentParams.filterFreq;
       filterNode.type = currentParams.filterType;

@@ -12,9 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
   sendToContent({ type: "START_CAPTURE" });
 
   // ---------- DOM REFERENCES ----------
-  const dry = document.getElementById("dry");
-  const level = document.getElementById("level");
+  const delayMix = document.getElementById("delayMix");
+  const delayMixValue = document.getElementById("delayMixValue");
   const feedback = document.getElementById("feedback");
+  const feedbackValue = document.getElementById("feedbackValue");
   const timeSlider = document.getElementById("time");
   const timeValue = document.getElementById("timeValue");
   const timeLabel = document.getElementById("timeLabel");
@@ -22,8 +23,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const bpmInput = document.getElementById("bpm");
   const pitch = document.getElementById("pitch");
   const pitchValue = document.getElementById("pitchValue");
-  const reverb = document.getElementById("reverb");
+  const reverbMix = document.getElementById("reverbMix");
+  const reverbMixValue = document.getElementById("reverbMixValue");
   const reverbSelect = document.getElementById("reverbSelect");
+  const customIrGroup = document.getElementById("customIrGroup");
+  const importIrBtn = document.getElementById("importIrBtn");
+  const importIrFile = document.getElementById("importIrFile");
+  const deleteIrBtn = document.getElementById("deleteIrBtn");
+  const customIrStorageValue = document.getElementById("customIrStorageValue");
   const filterFreq = document.getElementById("filterFreq");
   const filterFreqValue = document.getElementById("filterFreqValue");
   const filterQ = document.getElementById("filterQ");
@@ -59,8 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return Math.round(1000 * Math.log(hz / FILTER_MIN) / Math.log(FILTER_MAX / FILTER_MIN));
   }
 
-  // Q: 0.0001 to 30, log scale, slider 0-1000
-  const Q_MIN = 0.0001;
+  // Q: 0.5 to 30, log scale, slider 0-1000
+  // (below ~0.5-0.7 a biquad is critically/over-damped and produces no
+  // audible resonant peak, so that range just wasted slider travel)
+  const Q_MIN = 0.5;
   const Q_MAX = 30;
 
   function sliderToQ(val) {
@@ -82,14 +91,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // LFO depth: 1 to 10000 Hz, log scale, slider 0-1000
-  const DEPTH_MIN = 1;
+  const DEPTH_MIN = 0;
   const DEPTH_MAX = 10000;
-  function sliderToDepth(val) {
-    return DEPTH_MIN * Math.pow(DEPTH_MAX / DEPTH_MIN, val / 1000);
-  }
-  function depthToSlider(d) {
-    return Math.round(1000 * Math.log(d / DEPTH_MIN) / Math.log(DEPTH_MAX / DEPTH_MIN));
-  }
+
+	function sliderToDepth(val) {
+	  return DEPTH_MIN + (DEPTH_MAX - DEPTH_MIN) * (val / 1000);
+	}
+	function depthToSlider(d) {
+	  return Math.round(1000 * (d - DEPTH_MIN) / (DEPTH_MAX - DEPTH_MIN));
+	}
 
   // ---------- STEP MAP ----------
   const stepMap = [
@@ -112,6 +122,76 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "1/2 bar" },
     { name: "1/4 bar" },
   ];
+
+  // ---------- CUSTOM IR STORAGE ----------
+  // Custom IRs live in chrome.storage.local as { name, dataBase64 } under
+  // keys "customIR:<slug>". This is what makes them survive popup close/
+  // reopen and browser restarts without any re-picking or re-permissioning.
+  const CUSTOM_IR_PREFIX = "customIR:";
+  const CUSTOM_IR_WARN_BYTES = 10 * 1024 * 1024; // ~10 wav files at your library's average size
+
+  function arrayBufferToBase64(buffer) {
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  async function getCustomIrEntries() {
+    const all = await chrome.storage.local.get(null);
+    const entries = {};
+    for (const key in all) {
+      if (key.startsWith(CUSTOM_IR_PREFIX)) {
+        entries[key.slice(CUSTOM_IR_PREFIX.length)] = all[key];
+      }
+    }
+    return entries;
+  }
+
+  function formatBytes(bytes) {
+    return bytes >= 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.round(bytes / 1024)} KB`;
+  }
+
+  // Rebuilds the "custom" optgroup from storage and updates the size readout.
+  // Called on popup load and after every import, so the list is always in
+  // sync with what's actually persisted — nothing to "reconnect".
+  async function refreshCustomIrList() {
+    const entries = await getCustomIrEntries();
+    const slugs = Object.keys(entries);
+
+    if (customIrGroup) {
+      customIrGroup.innerHTML = "";
+      slugs.forEach(slug => {
+        const opt = document.createElement("option");
+        opt.value = `custom:${slug}`;
+        opt.textContent = entries[slug].name;
+        customIrGroup.appendChild(opt);
+      });
+    }
+
+    if (customIrStorageValue) {
+      // dataBase64.length * 0.75 approximates decoded byte size
+      const totalBytes = slugs.reduce(
+        (sum, slug) => sum + entries[slug].dataBase64.length * 0.75, 0
+      );
+      customIrStorageValue.textContent = slugs.length
+        ? `${slugs.length} custom / ${formatBytes(totalBytes)}`
+        : "no custom IRs";
+    }
+
+    return entries;
+  }
+
+  // DELETE IR only ever acts on custom entries — keep it inert for built-ins
+  // rather than requiring the user to notice that themselves.
+  function updateDeleteBtnState() {
+    if (deleteIrBtn) deleteIrBtn.disabled = !reverbSelect.value.startsWith("custom:");
+  }
 
   function updateLfoVisibility() {
     lfoParams.style.display = lfoOn.checked ? "block" : "none";
@@ -137,10 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateLabels(params) {
 
     if (tempoMode.checked) {
-      timeLabel.textContent = "[ DELAY TIME: STEP ]";
+      timeLabel.textContent = "[ TIME: STEP ]";
       timeValue.textContent = stepMap[params.step]?.name ?? "";
     } else {
-      timeLabel.textContent = "[ DELAY TIME: MS ]";
+      timeLabel.textContent = "[ TIME: MS ]";
       timeValue.textContent = `${params.time * 1000} ms`;
     }
 
@@ -152,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const semitones = p / 2;
         const sign = p > 0 ? "+" : "";
         // Show as whole semitone or .5
-        pitchValue.textContent = `${sign}${semitones % 1 === 0 ? semitones : semitones.toFixed(1)} st`;
+        pitchValue.textContent = `${sign}${semitones % 1 === 0 ? semitones : semitones.toFixed(1)}`;
       }
     }
 
@@ -165,6 +245,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (filterQValue) {
       filterQValue.textContent = params.filterQ.toFixed(2);
+    }
+
+    if (delayMixValue) {
+      delayMixValue.textContent = `${Math.round(params.delayMix * 100)}%`;
+    }
+
+    if (feedbackValue) {
+      feedbackValue.textContent = `${Math.round(params.feedback * 100)}%`;
+    }
+
+    if (reverbMixValue) {
+      reverbMixValue.textContent = `${Math.round(params.reverbMix * 100)}%`;
     }
 
     if (lfoRateValue) {
@@ -191,8 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateSliderMode();
 
-    dry.value = params.dry * 100;
-    level.value = params.level * 100;
+    delayMix.value = params.delayMix * 100;
     feedback.value = params.feedback * 100;
     pitch.value = params.pitch;
     bpmInput.value = params.bpm;
@@ -201,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? params.step
       : (params.time * 1000);
 
-    reverb.value = params.reverbGain * 100;
+    reverbMix.value = params.reverbMix * 100;
     reverbSelect.value = params.reverbType;
     filterFreq.value = hzToSlider(params.filterFreq);
     filterQ.value = qToSlider(params.filterQ);
@@ -213,6 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lfoDepth.value = depthToSlider(params.lfoDepth);
     lfoWave.value = params.lfoWave;
     updateLfoVisibility();
+    updateDeleteBtnState();
   }
 
   // SEND CURRENT UI STATE TO CONTENT SCRIPT
@@ -221,15 +313,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const bpm = parseFloat(bpmInput.value) || 120;
 
     const params = {
-      dry: parseFloat(dry.value) / 100,
-      level: parseFloat(level.value) / 100,
+      delayMix: parseFloat(delayMix.value) / 100,
       feedback: parseFloat(feedback.value) / 100,
       pitch: parseFloat(pitch.value),
       bpm,
       tempoMode: tempoMode.checked,
       step: parseInt(timeSlider.value, 10),
       time: parseFloat(timeSlider.value) / 1000,
-      reverbGain: parseFloat(reverb.value) / 100,
+      reverbMix: parseFloat(reverbMix.value) / 100,
       reverbType: reverbSelect.value,
       filterFreq: sliderToHz(parseFloat(filterFreq.value)),
       filterQ: sliderToQ(parseFloat(filterQ.value)),
@@ -247,12 +338,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // INIT FROM CONTENT SCRIPT
-  sendToContent({ type: "GET_PARAMS" }, (response) => {
-    const params = response?.params;
-    if (!params) return;
+  // Custom IR options must exist in the <select> before updateKnobs() sets
+  // reverbSelect.value, or a saved "custom:xyz" selection won't match anything.
+  refreshCustomIrList().then(() => {
+    sendToContent({ type: "GET_PARAMS" }, (response) => {
+      const params = response?.params;
+      if (!params) return;
 
-    updateKnobs(params);
-    updateLabels(params);
+      updateKnobs(params);
+      updateLabels(params);
+    });
   });
 
   // LISTEN TO RESET BUTTON
@@ -306,6 +401,74 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 
+  // IMPORT IR — button opens hidden file input
+  if (importIrBtn) importIrBtn.addEventListener("click", () => importIrFile && importIrFile.click());
+
+  if (importIrFile) importIrFile.addEventListener("change", async () => {
+    const files = Array.from(importIrFile.files || []);
+    if (!files.length) return;
+
+    const nonWav = files.filter(f => !f.name.toLowerCase().endsWith(".wav"));
+    if (nonWav.length) {
+      alert(`Skipping non-.wav file(s): ${nonWav.map(f => f.name).join(", ")}`);
+    }
+    const wavFiles = files.filter(f => f.name.toLowerCase().endsWith(".wav"));
+    if (!wavFiles.length) { importIrFile.value = ""; return; }
+
+    const existing = await getCustomIrEntries();
+    const existingBytes = Object.values(existing).reduce(
+      (sum, e) => sum + e.dataBase64.length * 0.75, 0
+    );
+    const incomingBytes = wavFiles.reduce((sum, f) => sum + f.size, 0);
+    const totalBytes = existingBytes + incomingBytes;
+
+    if (totalBytes > CUSTOM_IR_WARN_BYTES) {
+      const proceed = confirm(
+        `This will bring your custom IR storage to ~${formatBytes(totalBytes)}, ` +
+        `stored inside the browser on this device. It won't sync to other machines ` +
+        `and can add to your browser's profile size. Continue importing?`
+      );
+      if (!proceed) { importIrFile.value = ""; return; }
+    }
+
+    for (const file of wavFiles) {
+      const buf = await file.arrayBuffer();
+      const dataBase64 = arrayBufferToBase64(buf);
+      const slug = file.name
+        .replace(/\.wav$/i, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || `ir-${Date.now()}`;
+      await chrome.storage.local.set({
+        [`${CUSTOM_IR_PREFIX}${slug}`]: {
+          name: file.name.replace(/\.wav$/i, ""),
+          dataBase64
+        }
+      });
+    }
+
+    await refreshCustomIrList();
+    importIrFile.value = "";
+  });
+
+  // DELETE IR — removes the selected custom entry from storage; no-ops for built-ins
+  if (deleteIrBtn) deleteIrBtn.addEventListener("click", async () => {
+    const current = reverbSelect.value;
+    if (!current.startsWith("custom:")) return;
+
+    const label = reverbSelect.options[reverbSelect.selectedIndex]?.textContent || current;
+    if (!confirm(`Delete custom IR "${label}"? This can't be undone.`)) return;
+
+    const slug = current.slice("custom:".length);
+    await chrome.storage.local.remove(`${CUSTOM_IR_PREFIX}${slug}`);
+    await refreshCustomIrList();
+
+    // the deleted IR is no longer a valid selection — fall back to a built-in
+    reverbSelect.value = "church";
+    updateDeleteBtnState();
+    sendParams();
+  });
+
   tempoMode.addEventListener("input", () => {
     updateSliderMode();
     sendParams();
@@ -323,9 +486,11 @@ document.addEventListener("DOMContentLoaded", () => {
     sendParams();
   });
 
+  reverbSelect.addEventListener("input", updateDeleteBtnState);
+
   // LISTEN TO ALL OTHER CONTROLS
   [
-    dry, level, feedback, pitch, reverb, reverbSelect,
+    delayMix, feedback, pitch, reverbMix, reverbSelect,
     filterFreq, filterQ, filterType,
     lfoRate, lfoStep, lfoDepth, lfoWave,
     timeSlider, bpmInput
